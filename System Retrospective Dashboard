@@ -1,566 +1,348 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  BarChart3, 
-  Camera, 
-  Target, 
-  Zap, 
-  ArrowRight, 
-  Save, 
-  Plus, 
-  Trash2, 
-  CheckCircle2,
-  Moon,
-  Flame,
-  Star,
-  Layers,
-  Calendar,
-  Trophy,
-  Activity,
-  Image as ImageIcon,
-  Edit3,
-  Eye,
-  CalendarDays
-} from 'lucide-react';
-
-// 로고 컴포넌트
-const CustomLogo = ({ className = "w-10 h-10" }) => (
-  <svg 
-    viewBox="0 0 100 100" 
-    className={className} 
-    fill="none" 
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    {/* 왼쪽 눈 */}
-    <circle cx="30" cy="35" r="7" fill="currentColor" />
-    {/* 오른쪽 눈 */}
-    <circle cx="70" cy="35" r="7" fill="currentColor" />
-    {/* 살짝 기울어진 입 */}
-    <path 
-      d="M 25 65 L 75 55" 
-      stroke="currentColor" 
-      strokeWidth="8" 
-      strokeLinecap="round" 
-    />
-  </svg>
-);
-
-const App = () => {
-  const [activeTab, setActiveTab] = useState('monthly');
-  const [isEditMode, setIsEditMode] = useState(true);
-  const [saveStatus, setSaveStatus] = useState('');
-  
-  // 현재 선택된 월 (YYYY-MM 형식)
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
-
-  // 기본 데이터 템플릿
-  const getEmptyMonthData = () => ({
-    metrics: [
-      { id: 1, label: '프로젝트 완성도', value: 0, color: 'bg-blue-500' },
-      { id: 2, label: '기술적 성장(Stack)', value: 0, color: 'bg-purple-500' },
-      { id: 3, label: '수익/성과 지표', value: 0, color: 'bg-emerald-500' },
-      { id: 4, label: '에너지 관리', value: 0, color: 'bg-orange-500' }
-    ],
-    categories: [
-      { id: 1, name: '카테고리1', status: 'Ready', progress: 0, color: 'text-yellow-400' },
-      { id: 2, name: '카테고리2', status: 'Ready', progress: 0, color: 'text-indigo-400' },
-      { id: 3, name: '카테고리3', status: 'Ready', progress: 0, color: 'text-emerald-400' },
-      { id: 4, name: '카테고리4', status: 'Ready', progress: 0, color: 'text-rose-400' },
-    ],
-    kpt: {
-      keep: [],
-      problem: [],
-      try: []
-    },
-    bestMoment: "이번 달 가장 기억에 남는 순간을 기록하세요.",
-    gallery: []
-  });
-
-  // 전체 아카이브 데이터 구조 초기값
-  const [archive, setArchive] = useState({
-    months: { [selectedMonth]: getEmptyMonthData() },
-    yearly: {
-      stats: [
-        { label: '전체 목표 달성률', value: '0%', icon: 'Target' },
-        { label: '주요 프로젝트', value: '0개', icon: 'Layers' },
-        { label: '최고 매출 달성', value: '-', icon: 'Flame' },
-        { label: '학습 시간', value: '0h', icon: 'Activity' },
-      ],
-      milestones: [
-        { q: 'Q1', title: '1분기 목표', desc: '내용을 입력하세요', status: 'Planned' },
-        { q: 'Q2', title: '2분기 목표', desc: '내용을 입력하세요', status: 'Planned' },
-        { q: 'Q3', title: '3분기 목표', desc: '내용을 입력하세요', status: 'Planned' },
-        { q: 'Q4', title: '4분기 목표', desc: '내용을 입력하세요', status: 'Planned' },
-      ],
-      keywords: ['성장', '도전', '시스템']
-    }
-  });
-
-  // 로컬 스토리지 데이터 로드
-  useEffect(() => {
-    const saved = localStorage.getItem('system_archive_final_v4_dynamic');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setArchive(parsed);
-      const monthKeys = Object.keys(parsed.months).sort().reverse();
-      if (monthKeys.length > 0) setSelectedMonth(monthKeys[0]);
-    }
-  }, []);
-
-  const handleSave = () => {
-    localStorage.setItem('system_archive_final_v4_dynamic', JSON.stringify(archive));
-    setSaveStatus('데이터 저장 완료!');
-    setTimeout(() => setSaveStatus(''), 3000);
-  };
-
-  const currentData = archive.months[selectedMonth] || getEmptyMonthData();
-
-  // 데이터 업데이트 헬퍼
-  const updateCurrentMonthData = (updater) => {
-    setArchive(prev => ({
-      ...prev,
-      months: {
-        ...prev.months,
-        [selectedMonth]: updater(prev.months[selectedMonth] || getEmptyMonthData())
-      }
-    }));
-  };
-
-  // KPI 업데이트
-  const updateMetric = (id, field, value) => {
-    updateCurrentMonthData(month => ({
-      ...month,
-      metrics: month.metrics.map(met => met.id === id ? { ...met, [field]: value } : met)
-    }));
-  };
-
-  // 카테고리 관련 기능
-  const addCategory = () => {
-    updateCurrentMonthData(month => ({
-      ...month,
-      categories: [
-        ...month.categories,
-        { id: Date.now(), name: '새 카테고리', status: 'Ready', progress: 0, color: 'text-slate-400' }
-      ]
-    }));
-  };
-
-  const deleteCategory = (id) => {
-    updateCurrentMonthData(month => ({
-      ...month,
-      categories: month.categories.filter(c => c.id !== id)
-    }));
-  };
-
-  const updateCategory = (id, field, value) => {
-    updateCurrentMonthData(month => ({
-      ...month,
-      categories: month.categories.map(c => c.id === id ? { ...c, [field]: value } : c)
-    }));
-  };
-
-  // KPT 관련 기능
-  const updateKpt = (type, index, value) => {
-    updateCurrentMonthData(month => {
-      const newKpt = { ...month.kpt };
-      newKpt[type][index] = value;
-      return { ...month, kpt: newKpt };
-    });
-  };
-
-  const addKpt = (type) => {
-    updateCurrentMonthData(month => {
-      const newKpt = { ...month.kpt };
-      newKpt[type].push('새로운 항목');
-      return { ...month, kpt: newKpt };
-    });
-  };
-
-  const deleteKpt = (type, index) => {
-    updateCurrentMonthData(month => {
-      const newKpt = { ...month.kpt };
-      newKpt[type].splice(index, 1);
-      return { ...month, kpt: newKpt };
-    });
-  };
-
-  const addNewMonth = () => {
-    const today = new Date();
-    const newMonthStr = prompt("추가할 월을 입력하세요 (예: 2026-02)", today.toISOString().slice(0, 7));
-    if (newMonthStr && !archive.months[newMonthStr]) {
-      setArchive(prev => ({
-        ...prev,
-        months: { ...prev.months, [newMonthStr]: getEmptyMonthData() }
-      }));
-      setSelectedMonth(newMonthStr);
-    } else if (archive.months[newMonthStr]) {
-      setSelectedMonth(newMonthStr);
-    }
-  };
-
-  const MonthlyView = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="lg:col-span-1 space-y-6">
-        {/* KPI 섹션 */}
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <BarChart3 size={20} className="text-indigo-400" /> 핵심 성과 지표 (KPI)
-          </h2>
-          <div className="space-y-5">
-            {currentData.metrics.map((m) => (
-              <div key={m.id}>
-                <div className="flex justify-between text-sm mb-1">
-                  {isEditMode ? (
-                    <input 
-                      className="bg-transparent border-b border-slate-700 focus:border-indigo-500 outline-none text-slate-300 w-2/3"
-                      value={m.label} 
-                      onChange={(e) => updateMetric(m.id, 'label', e.target.value)}
-                    />
-                  ) : (
-                    <span className="text-slate-300">{m.label}</span>
-                  )}
-                  <span className="font-mono text-indigo-400">{m.value}%</span>
-                </div>
-                {isEditMode && (
-                  <input 
-                    type="range" min="0" max="100" value={m.value}
-                    onChange={(e) => updateMetric(m.id, 'value', parseInt(e.target.value))}
-                    className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 mb-2"
-                  />
-                )}
-                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <div className={`${m.color} h-full transition-all duration-500`} style={{ width: `${m.value}%` }}></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 카테고리 상세 점검 섹션 (동적 추가/삭제 가능) */}
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Layers size={20} className="text-indigo-400" /> 영역별 상세 점검
-            </h2>
-            {isEditMode && (
-              <button 
-                onClick={addCategory}
-                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-lg transition-colors border border-slate-700"
-                title="카테고리 추가"
-              >
-                <Plus size={16} />
-              </button>
-            )}
-          </div>
-          <div className="space-y-4">
-            {currentData.categories.map((cat) => (
-              <div key={cat.id} className="p-3 bg-slate-800/40 rounded-xl border border-slate-700/50 group relative">
-                {isEditMode && (
-                  <button 
-                    onClick={() => deleteCategory(cat.id)}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                )}
-                <div className="flex justify-between items-center mb-2">
-                  {isEditMode ? (
-                    <input 
-                      className="bg-transparent border-b border-slate-700 text-sm font-bold text-slate-200 outline-none w-1/2"
-                      value={cat.name}
-                      onChange={(e) => updateCategory(cat.id, 'name', e.target.value)}
-                    />
-                  ) : (
-                    <span className="text-sm font-bold text-slate-200">{cat.name}</span>
-                  )}
-                  {isEditMode ? (
-                    <input 
-                      className="bg-slate-700 text-[10px] px-2 py-0.5 rounded-full outline-none text-white w-24 text-center"
-                      value={cat.status}
-                      onChange={(e) => updateCategory(cat.id, 'status', e.target.value)}
-                    />
-                  ) : (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full bg-slate-700 ${cat.color}`}>{cat.status}</span>
-                  )}
-                </div>
-                {isEditMode && (
-                  <input 
-                    type="range" min="0" max="100" value={cat.progress}
-                    onChange={(e) => updateCategory(cat.id, 'progress', parseInt(e.target.value))}
-                    className="w-full h-1 mb-2 accent-indigo-400"
-                  />
-                )}
-                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div className="h-full bg-indigo-500 transition-all" style={{ width: `${cat.progress}%` }}></div>
-                </div>
-              </div>
-            ))}
-            {currentData.categories.length === 0 && (
-              <div className="text-center py-6 border border-dashed border-slate-800 rounded-xl">
-                <p className="text-xs text-slate-600">추가된 카테고리가 없습니다.</p>
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-
-      <div className="lg:col-span-2 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {['keep', 'problem', 'try'].map((type) => (
-            <div key={type} className={`bg-slate-900 border border-slate-800 rounded-2xl p-5 border-t-4 shadow-lg ${
-              type === 'keep' ? 'border-t-blue-500' : type === 'problem' ? 'border-t-red-500' : 'border-t-emerald-500'
-            }`}>
-              <div className="flex justify-between items-center mb-3">
-                <h3 className={`font-bold uppercase flex items-center gap-2 ${
-                  type === 'keep' ? 'text-blue-400' : type === 'problem' ? 'text-red-400' : 'text-emerald-400'
-                }`}>
-                  {type === 'keep' ? <CheckCircle2 size={18} /> : type === 'problem' ? <Trash2 size={18} /> : <Zap size={18} />}
-                  {type}
-                </h3>
-                {isEditMode && (
-                  <button onClick={() => addKpt(type)} className="text-slate-500 hover:text-white transition-colors">
-                    <Plus size={16} />
-                  </button>
-                )}
-              </div>
-              <ul className="space-y-3">
-                {currentData.kpt[type].map((item, i) => (
-                  <li key={i} className="text-sm text-slate-400 flex gap-2 group">
-                    <span className="mt-1 opacity-50">•</span>
-                    {isEditMode ? (
-                      <div className="flex-1 flex gap-2">
-                        <textarea 
-                          rows="1"
-                          className="bg-transparent border-b border-slate-800 focus:border-slate-600 outline-none w-full resize-none py-0.5 text-slate-200"
-                          value={item}
-                          onChange={(e) => updateKpt(type, i, e.target.value)}
-                        />
-                        <button onClick={() => deleteKpt(type, i)} className="opacity-0 group-hover:opacity-100 text-red-500 transition-opacity">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="leading-relaxed">{item}</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5"><Moon size={100} /></div>
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><Star size={20} className="text-yellow-400" /> 이달의 하이라이트</h2>
-          {isEditMode ? (
-            <textarea 
-              className="bg-slate-800/50 w-full p-4 rounded-xl border border-slate-700 outline-none focus:border-indigo-500 text-sm italic text-slate-300 resize-none h-24"
-              value={currentData.bestMoment}
-              onChange={(e) => {
-                const val = e.target.value;
-                updateCurrentMonthData(month => ({ ...month, bestMoment: val }));
-              }}
-            />
-          ) : (
-            <p className="text-sm text-slate-300 leading-relaxed italic border-l-2 border-indigo-500 pl-3">"{currentData.bestMoment}"</p>
-          )}
-        </section>
-
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><Camera size={20} className="text-indigo-400" /> 시각적 성취 기록</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="aspect-video bg-slate-800 rounded-xl border-2 border-dashed border-slate-700 flex flex-col items-center justify-center text-slate-500 hover:border-indigo-500 hover:text-indigo-400 transition-all cursor-pointer">
-              <Plus size={24} />
-              <span className="text-[10px] mt-1 font-bold uppercase tracking-tighter">Add Photo</span>
-            </div>
-            <div className="aspect-video bg-slate-800 rounded-xl border border-slate-700 relative flex items-center justify-center overflow-hidden">
-               <ImageIcon size={24} className="opacity-10" />
-            </div>
-          </div>
-        </section>
-      </div>
-    </div>
-  );
-
-  const YearlyView = () => (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {archive.yearly.stats.map((stat, i) => (
-          <div key={i} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col items-center text-center">
-            <span className="text-[10px] text-slate-500 uppercase tracking-tighter mb-1">{stat.label}</span>
-            {isEditMode ? (
-              <input 
-                className="bg-transparent border-b border-slate-700 text-2xl font-bold text-white font-mono text-center outline-none w-full"
-                value={stat.value}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setArchive(prev => {
-                    const newStats = [...prev.yearly.stats];
-                    newStats[i].value = val;
-                    return { ...prev, yearly: { ...prev.yearly, stats: newStats } };
-                  });
-                }}
-              />
-            ) : (
-              <span className="text-2xl font-bold text-white font-mono">{stat.value}</span>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <section className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-        <h2 className="text-2xl font-bold flex items-center gap-3 mb-8"><ImageIcon className="text-indigo-400" /> 2025 MEMORY LANE</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="md:col-span-2 md:row-span-2 aspect-[4/3] bg-slate-800 rounded-2xl border border-slate-700 flex flex-col items-center justify-center text-slate-600 relative overflow-hidden">
-            <CustomLogo className="w-20 h-20 opacity-10 mb-2 text-indigo-400" />
-            <span className="text-sm font-bold opacity-30 tracking-widest uppercase">Masterpiece Shot</span>
-          </div>
-          {[1, 2, 3, 4].map((q) => (
-            <div key={q} className="aspect-square bg-slate-800/50 rounded-2xl border border-slate-700 flex items-center justify-center relative overflow-hidden">
-               <span className="text-[10px] font-mono text-slate-600 uppercase tracking-tighter font-bold">Quarter 0{q} Snapshot</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Calendar className="text-indigo-400" /> 2025 분기별 마일스톤</h2>
-          <div className="space-y-4">
-            {archive.yearly.milestones.map((m, i) => (
-              <div key={i} className="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50 relative">
-                <div className="flex justify-between items-center mb-1">
-                  {isEditMode ? (
-                    <input className="bg-transparent border-b border-slate-700 font-bold text-slate-200 outline-none w-1/2" value={m.title} onChange={(e) => {
-                      const val = e.target.value;
-                      setArchive(prev => {
-                        const newM = [...prev.yearly.milestones]; newM[i].title = val;
-                        return { ...prev, yearly: { ...prev.yearly, milestones: newM } };
-                      });
-                    }} />
-                  ) : <h4 className="font-bold text-slate-200">{m.title}</h4>}
-                  <span className="text-[10px] font-mono text-indigo-400">{m.q}</span>
-                </div>
-                {isEditMode ? (
-                  <textarea className="bg-transparent w-full mt-2 text-sm text-slate-400 outline-none resize-none h-12" value={m.desc} onChange={(e) => {
-                    const val = e.target.value;
-                    setArchive(prev => {
-                      const newM = [...prev.yearly.milestones]; newM[i].desc = val;
-                      return { ...prev, yearly: { ...prev.yearly, milestones: newM } };
-                    });
-                  }} />
-                ) : <p className="text-sm text-slate-400 leading-relaxed">{m.desc}</p>}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="bg-indigo-600 rounded-2xl p-8 text-white shadow-xl shadow-indigo-900/40">
-          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">2026 비전 & 키워드</h2>
-          <div className="flex flex-wrap gap-2">
-            {archive.yearly.keywords.map((kw, i) => (
-              <div key={i} className="group bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full text-xs border border-white/30">
-                {isEditMode ? (
-                  <input className="bg-transparent outline-none w-24 text-center placeholder-white/50" value={kw} onChange={(e) => {
-                    const val = e.target.value;
-                    setArchive(prev => {
-                      const newKw = [...prev.yearly.keywords]; newKw[i] = val;
-                      return { ...prev, yearly: { ...prev.yearly, keywords: newKw } };
-                    });
-                  }} />
-                ) : <span>#{kw}</span>}
-              </div>
-            ))}
-          </div>
-          <p className="mt-8 text-sm italic font-light leading-relaxed opacity-90">
-            "나의 목표"
-          </p>
-        </section>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans pb-32">
-      <header className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
-        <div className="flex items-center gap-4">
-          <div className="p-2.5 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-600/30 flex items-center justify-center">
-            <CustomLogo className="w-9 h-9 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-white uppercase italic">System Archive <span className="text-indigo-500 font-mono not-italic ml-1">v4.2</span></h1>
-            <div className="flex items-center gap-2 mt-0.5">
-               <CalendarDays size={14} className="text-slate-500" />
-               <p className="text-slate-400 text-[10px] font-bold tracking-[0.2em] uppercase">Personal Growth OS</p>
-            </div>
-          </div>
-        </div>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Archive Terminal v4.2</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel for JSX Compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains+Mono', monospace; }
         
-        <div className="flex flex-wrap items-center gap-3">
-          {activeTab === 'monthly' && (
-            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-xl">
-              <select 
-                className="bg-transparent text-sm font-bold text-slate-300 outline-none px-3 py-1 cursor-pointer"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-              >
-                {Object.keys(archive.months).sort().reverse().map(m => (
-                  <option key={m} value={m} className="bg-slate-900 text-white">{m}</option>
-                ))}
-              </select>
-              <button 
-                onClick={addNewMonth}
-                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-lg transition-colors"
-                title="새로운 달 추가"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
-          )}
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-          <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
-            <button onClick={() => setActiveTab('monthly')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'monthly' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400'}`}>MONTHLY</button>
-            <button onClick={() => setActiveTab('yearly')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'yearly' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400'}`}>YEARLY</button>
-          </div>
-          
-          <button 
-            onClick={() => setIsEditMode(!isEditMode)}
-            className={`p-2.5 rounded-xl border transition-all ${isEditMode ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
-          >
-            {isEditMode ? <Eye size={20} /> : <Edit3 size={20} />}
-          </button>
-        </div>
-      </header>
+        /* Slider Customization */
+        input[type="range"] { -webkit-appearance: none; background: transparent; }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px; width: 14px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            margin-top: -5px;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px;
+            cursor: pointer;
+            background: #1e293b;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 selection:bg-indigo-500/30">
+    <div id="root"></div>
 
-      <main className="max-w-6xl mx-auto">
-        {activeTab === 'monthly' ? <MonthlyView /> : <YearlyView />}
-      </main>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
 
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-lg px-6 z-50">
-        <div className="bg-slate-900/90 backdrop-blur-2xl border border-slate-700/50 p-4 rounded-3xl shadow-2xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CustomLogo className={`w-5 h-5 ${saveStatus ? 'text-emerald-500 animate-bounce' : 'text-indigo-500'}`} />
-            <div className="flex flex-col">
-              <span className="text-[9px] uppercase font-black text-slate-500 tracking-[0.2em]">Archive Sync</span>
-              <span className={`text-xs font-bold ${saveStatus ? 'text-emerald-400' : 'text-slate-200'}`}>
-                {saveStatus || (isEditMode ? `편집 중: ${selectedMonth}` : '데이터 읽기 전용')}
-              </span>
-            </div>
-          </div>
-          <button 
-            onClick={handleSave}
-            className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-xl flex items-center gap-2 group active:scale-95"
-          >
-            <Save size={18} className="group-hover:rotate-12 transition-transform" />
-            업데이트
-          </button>
-        </div>
-      </div>
+        // 아이콘 래퍼 컴포넌트
+        const Icon = ({ name, size = 20, className = "" }) => {
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} style={{ width: size, height: size }} className={`inline-block ${className}`}></i>;
+        };
 
-      <footer className="max-w-6xl mx-auto mt-24 text-center text-slate-700 text-[10px] tracking-[0.3em] font-bold uppercase pb-10">
-        &copy; System Archive Terminal v4.2 // Dynamic Expansion Enabled
-      </footer>
-    </div>
-  );
-};
+        // 직접 그려주신 커스텀 로고
+        const CustomLogo = ({ className = "w-10 h-10" }) => (
+            <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="30" cy="35" r="7" fill="currentColor" />
+                <circle cx="70" cy="35" r="7" fill="currentColor" />
+                <path d="M 25 65 L 75 55" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
+            </svg>
+        );
 
-export default App;
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('monthly');
+            const [isEditMode, setIsEditMode] = useState(true);
+            const [saveStatus, setSaveStatus] = useState('');
+            const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+
+            // 데이터 템플릿
+            const getEmptyMonthData = () => ({
+                metrics: [
+                    { id: 1, label: '프로젝트 완성도', value: 0, color: 'bg-blue-500' },
+                    { id: 2, label: '기술적 성장(Stack)', value: 0, color: 'bg-purple-500' },
+                    { id: 3, label: '수익/성과 지표', value: 0, color: 'bg-emerald-500' },
+                    { id: 4, label: '에너지 관리', value: 0, color: 'bg-orange-500' }
+                ],
+                categories: [
+                    { id: 1, name: 'UI/UX', status: 'Ready', progress: 0, color: 'text-yellow-400' },
+                    { id: 2, name: 'AI 엔지니어링', status: 'Ready', progress: 0, color: 'text-indigo-400' }
+                ],
+                kpt: { keep: [], problem: [], try: [] },
+                bestMoment: "이번 달 가장 기억에 남는 순간을 기록하세요.",
+                photos: [null, null, null, null] // 최대 4장 사진 영역
+            });
+
+            const [archive, setArchive] = useState({
+                months: { [selectedMonth]: getEmptyMonthData() },
+                yearly: {
+                    stats: [
+                        { label: '전체 목표 달성률', value: '0%', icon: 'target' },
+                        { label: '주요 프로젝트', value: '0개', icon: 'layers' },
+                        { label: '최고 매출 달성', value: '-', icon: 'flame' },
+                        { label: '학습 시간', value: '0h', icon: 'activity' },
+                    ],
+                    milestones: [
+                        { q: 'Q1', title: '1분기 목표', desc: '내용 입력', status: 'Planned' },
+                        { q: 'Q2', title: '2분기 목표', desc: '내용 입력', status: 'Planned' },
+                        { q: 'Q3', title: '3분기 목표', desc: '내용 입력', status: 'Planned' },
+                        { q: 'Q4', title: '4분기 목표', desc: '내용 입력', status: 'Planned' },
+                    ],
+                    keywords: ['성장', '도전', '시스템']
+                }
+            });
+
+            useEffect(() => {
+                const saved = localStorage.getItem('system_archive_v4_2_final_v2');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    setArchive(parsed);
+                    const monthKeys = Object.keys(parsed.months).sort().reverse();
+                    if (monthKeys.length > 0) setSelectedMonth(monthKeys[0]);
+                }
+                setTimeout(() => window.lucide.createIcons(), 200);
+            }, []);
+
+            const handleSave = () => {
+                localStorage.setItem('system_archive_v4_2_final_v2', JSON.stringify(archive));
+                setSaveStatus('데이터 저장 완료!');
+                setTimeout(() => setSaveStatus(''), 3000);
+            };
+
+            const currentData = archive.months[selectedMonth] || getEmptyMonthData();
+
+            const updateCurrentMonthData = (updater) => {
+                setArchive(prev => ({
+                    ...prev,
+                    months: { ...prev.months, [selectedMonth]: updater(prev.months[selectedMonth] || getEmptyMonthData()) }
+                }));
+            };
+
+            const addNewMonth = () => {
+                const newMonthStr = prompt("추가할 월을 입력하세요 (예: 2026-03)", new Date().toISOString().slice(0, 7));
+                if (newMonthStr && !archive.months[newMonthStr]) {
+                    setArchive(prev => ({
+                        ...prev,
+                        months: { ...prev.months, [newMonthStr]: getEmptyMonthData() }
+                    }));
+                    setSelectedMonth(newMonthStr);
+                } else if (archive.months[newMonthStr]) {
+                    setSelectedMonth(newMonthStr);
+                }
+            };
+
+            const MonthlyView = () => (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
+                    <div className="lg:col-span-1 space-y-6">
+                        {/* KPI 섹션 */}
+                        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                <Icon name="bar-chart-3" className="text-indigo-400" /> 핵심 성과 지표 (KPI)
+                            </h2>
+                            <div className="space-y-5">
+                                {currentData.metrics.map((m) => (
+                                    <div key={m.id}>
+                                        <div className="flex justify-between text-sm mb-1">
+                                            {isEditMode ? (
+                                                <input className="bg-transparent border-b border-slate-700 outline-none text-slate-300 w-2/3" value={m.label} onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    updateCurrentMonthData(month => ({ ...month, metrics: month.metrics.map(met => met.id === m.id ? { ...met, label: val } : met) }));
+                                                }} />
+                                            ) : <span className="text-slate-300">{m.label}</span>}
+                                            <span className="font-mono text-indigo-400">{m.value}%</span>
+                                        </div>
+                                        {isEditMode && <input type="range" min="0" max="100" value={m.value} onChange={(e) => {
+                                            const val = parseInt(e.target.value);
+                                            updateCurrentMonthData(month => ({ ...month, metrics: month.metrics.map(met => met.id === m.id ? { ...met, value: val } : met) }));
+                                        }} className="w-full mb-2" />}
+                                        <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                            <div className={`${m.color} h-full transition-all duration-500`} style={{ width: `${m.value}%` }}></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* 카테고리 상세 점검 */}
+                        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-lg font-semibold flex items-center gap-2"><Icon name="layers" className="text-indigo-400" /> 영역별 상세 점검</h2>
+                                {isEditMode && <button onClick={() => updateCurrentMonthData(month => ({ ...month, categories: [...month.categories, { id: Date.now(), name: '새 영역', status: 'Ready', progress: 0, color: 'text-slate-400' }] }))} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-lg"><Icon name="plus" size={16} /></button>}
+                            </div>
+                            <div className="space-y-4">
+                                {(currentData.categories || []).map((cat) => (
+                                    <div key={cat.id} className="p-3 bg-slate-800/40 rounded-xl border border-slate-700/50 group relative">
+                                        {isEditMode && <button onClick={() => updateCurrentMonthData(month => ({ ...month, categories: month.categories.filter(c => c.id !== cat.id) }))} className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100"><Icon name="trash-2" size={12} /></button>}
+                                        <div className="flex justify-between items-center mb-2">
+                                            {isEditMode ? <input className="bg-transparent border-b border-slate-700 text-sm font-bold text-slate-200 outline-none w-1/2" value={cat.name} onChange={(e) => updateCurrentMonthData(month => ({ ...month, categories: month.categories.map(c => c.id === cat.id ? { ...c, name: e.target.value } : c) }))} /> : <span className="text-sm font-bold text-slate-200">{cat.name}</span>}
+                                            {isEditMode ? <input className="bg-slate-700 text-[10px] px-2 py-0.5 rounded-full outline-none text-white w-20 text-center" value={cat.status} onChange={(e) => updateCurrentMonthData(month => ({ ...month, categories: month.categories.map(c => c.id === cat.id ? { ...c, status: e.target.value } : c) }))} /> : <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-700">{cat.status}</span>}
+                                        </div>
+                                        {isEditMode && <input type="range" min="0" max="100" value={cat.progress} onChange={(e) => updateCurrentMonthData(month => ({ ...month, categories: month.categories.map(c => c.id === cat.id ? { ...c, progress: parseInt(e.target.value) } : c) }))} className="w-full mb-2 accent-indigo-400" />}
+                                        <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: `${cat.progress}%` }}></div></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    </div>
+
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* KPT 섹션 */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {['keep', 'problem', 'try'].map((type) => (
+                                <div key={type} className={`bg-slate-900 border border-slate-800 rounded-2xl p-5 border-t-4 ${type === 'keep' ? 'border-t-blue-500' : type === 'problem' ? 'border-t-red-500' : 'border-t-emerald-500'}`}>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className={`font-bold uppercase flex items-center gap-2 ${type === 'keep' ? 'text-blue-400' : type === 'problem' ? 'text-red-400' : 'text-emerald-400'}`}>
+                                            <Icon name={type === 'keep' ? 'check-circle-2' : type === 'problem' ? 'trash-2' : 'zap'} size={18} /> {type}
+                                        </h3>
+                                        {isEditMode && <button onClick={() => updateCurrentMonthData(month => { const nk = {...month.kpt}; nk[type].push('새 항목'); return {...month, kpt: nk}; })} className="text-slate-500 hover:text-white"><Icon name="plus" size={16} /></button>}
+                                    </div>
+                                    <ul className="space-y-3">
+                                        {(currentData.kpt[type] || []).map((item, i) => (
+                                            <li key={i} className="text-sm text-slate-400 flex gap-2 group">
+                                                <span className="mt-1 opacity-50">•</span>
+                                                {isEditMode ? (
+                                                    <div className="flex-1 flex gap-2">
+                                                        <textarea rows="1" className="bg-transparent border-b border-slate-800 outline-none w-full resize-none py-0.5 text-slate-200" value={item} onChange={(e) => updateCurrentMonthData(month => { const nk = {...month.kpt}; nk[type][i] = e.target.value; return {...month, kpt: nk}; })} />
+                                                        <button onClick={() => updateCurrentMonthData(month => { const nk = {...month.kpt}; nk[type].splice(i, 1); return {...month, kpt: nk}; })} className="text-red-500"><Icon name="trash-2" size={14} /></button>
+                                                    </div>
+                                                ) : <span className="leading-relaxed">{item}</span>}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* 하이라이트 & 사진 영역 */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden flex flex-col">
+                                <div className="absolute top-0 right-0 p-4 opacity-5"><Icon name="moon" size={100} /></div>
+                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-yellow-400"><Icon name="star" size={20} /> 이달의 하이라이트</h2>
+                                {isEditMode ? <textarea className="bg-slate-800/50 w-full p-4 rounded-xl border border-slate-700 outline-none focus:border-indigo-500 text-sm italic text-slate-300 h-full min-h-[120px]" value={currentData.bestMoment} onChange={(e) => updateCurrentMonthData(month => ({ ...month, bestMoment: e.target.value }))} /> : <p className="text-sm text-slate-300 italic border-l-2 border-indigo-500 pl-3 h-full">"{currentData.bestMoment}"</p>}
+                            </section>
+
+                            <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-indigo-400"><Icon name="camera" size={20} /> 월간 비주얼 레코드</h2>
+                                <div className="grid grid-cols-2 gap-3 h-full">
+                                    {(currentData.photos || [null, null, null, null]).map((photo, i) => (
+                                        <div key={i} className="aspect-square bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center relative overflow-hidden group cursor-pointer hover:border-indigo-500 transition-colors">
+                                            {photo ? (
+                                                <img src={photo} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="flex flex-col items-center opacity-20 group-hover:opacity-40 transition-opacity">
+                                                    <Icon name="image" size={24} />
+                                                    <span className="text-[9px] mt-1 uppercase font-bold tracking-tighter">Photo {i+1}</span>
+                                                </div>
+                                            )}
+                                            {isEditMode && (
+                                                <div className="absolute inset-0 bg-indigo-600/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                    <button onClick={() => {
+                                                        const url = prompt("이미지 URL을 입력하세요:");
+                                                        if(url) updateCurrentMonthData(month => {
+                                                            const np = [...(month.photos || [null, null, null, null])];
+                                                            np[i] = url; return {...month, photos: np};
+                                                        });
+                                                    }} className="p-2 bg-slate-900 rounded-full shadow-lg">
+                                                        <Icon name="plus" size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const YearlyView = () => (
+                <div className="space-y-8 animate-in fade-in duration-500">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {archive.yearly.stats.map((stat, i) => (
+                            <div key={i} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col items-center text-center">
+                                <span className="text-[10px] text-slate-500 uppercase tracking-tighter mb-1">{stat.label}</span>
+                                {isEditMode ? <input className="bg-transparent border-b border-slate-700 text-2xl font-bold text-white font-mono text-center outline-none w-full" value={stat.value} onChange={(e) => setArchive(prev => { const ns = [...prev.yearly.stats]; ns[i].value = e.target.value; return {...prev, yearly: {...prev.yearly, stats: ns}}; })} /> : <span className="text-2xl font-bold text-white font-mono">{stat.value}</span>}
+                            </div>
+                        ))}
+                    </div>
+                    <section className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+                        <h2 className="text-2xl font-bold flex items-center gap-3 mb-8"><Icon name="image" className="text-indigo-400" /> 2025 MEMORY LANE</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="md:col-span-2 md:row-span-2 aspect-[4/3] bg-slate-800 rounded-2xl border border-slate-700 flex flex-col items-center justify-center text-slate-600 relative overflow-hidden">
+                                <CustomLogo className="w-20 h-20 opacity-10 mb-2 text-indigo-400" />
+                                <span className="text-sm font-bold opacity-30 tracking-widest uppercase italic">The Masterpiece</span>
+                            </div>
+                            {[1, 2, 3, 4].map(q => <div key={q} className="aspect-square bg-slate-800/50 rounded-2xl border border-slate-700 flex items-center justify-center text-slate-600 text-[10px] font-mono">Q{q} Moment</div>)}
+                        </div>
+                    </section>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen p-4 md:p-8 pb-32 max-w-6xl mx-auto">
+                    <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2.5 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-600/30 flex items-center justify-center"><CustomLogo className="w-9 h-9 text-white" /></div>
+                            <div>
+                                <h1 className="text-2xl font-black tracking-tight text-white uppercase italic text-shadow-glow">System Archive <span className="text-indigo-500 font-mono not-italic ml-1">v4.2</span></h1>
+                                <p className="text-slate-400 text-[10px] font-bold tracking-[0.2em] uppercase">Personal Growth OS</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center gap-3">
+                            {activeTab === 'monthly' && (
+                                <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-xl">
+                                    <select className="bg-transparent text-sm font-bold text-slate-300 outline-none px-3 py-1 cursor-pointer" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
+                                        {Object.keys(archive.months).sort().reverse().map(m => <option key={m} value={m} className="bg-slate-900 text-white">{m}</option>)}
+                                    </select>
+                                    <button onClick={addNewMonth} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-lg"><Icon name="plus" size={18} /></button>
+                                </div>
+                            )}
+                            <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+                                <button onClick={() => setActiveTab('monthly')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'monthly' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400'}`}>MONTHLY</button>
+                                <button onClick={() => setActiveTab('yearly')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'yearly' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400'}`}>YEARLY</button>
+                            </div>
+                            <button onClick={() => setIsEditMode(!isEditMode)} className={`p-2.5 rounded-xl border transition-all ${isEditMode ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-slate-900 border-slate-800 text-slate-400'}`}><Icon name={isEditMode ? 'eye' : 'edit-3'} /></button>
+                        </div>
+                    </header>
+
+                    <main>{activeTab === 'monthly' ? <MonthlyView /> : <YearlyView />}</main>
+
+                    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-lg px-6 z-50">
+                        <div className="bg-slate-900/90 backdrop-blur-2xl border border-slate-700/50 p-4 rounded-3xl shadow-2xl flex items-center justify-between border-t border-slate-700/50">
+                            <div className="flex items-center gap-3 text-slate-200">
+                                <CustomLogo className={`w-5 h-5 ${saveStatus ? 'text-emerald-500 animate-bounce' : 'text-indigo-500'}`} />
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] uppercase font-black text-slate-500 tracking-widest">Archive Sync</span>
+                                    <span className={`text-xs font-bold ${saveStatus ? 'text-emerald-400' : 'text-slate-200'}`}>{saveStatus || (isEditMode ? `편집 중: ${selectedMonth}` : '데이터 읽기 전용')}</span>
+                                </div>
+                            </div>
+                            <button onClick={handleSave} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-xl flex items-center gap-2 group active:scale-95"><Icon name="save" size={18} className="group-hover:rotate-12 transition-transform" /> 업데이트</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
