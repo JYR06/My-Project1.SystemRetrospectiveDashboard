@@ -17,8 +17,8 @@ Key Features
 - 고효율 몰입을 위한 다크 모드 기반의 고대비 UI/UX.
 
 🛠 Tech Stack
-Library: React.js
-Styling: Tailwind CSS
-Icons: Lucide-React
-State Management: React Hooks (useState, useEffect)
-Storage: Browser LocalStorage
+- Library: React.js
+- Styling: Tailwind CSS
+- Icons: Lucide-React
+- State Management: React Hooks (useState, useEffect)
+- Storage: Browser LocalStorage
