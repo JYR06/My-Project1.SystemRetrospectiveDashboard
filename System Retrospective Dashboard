@@ -22,7 +22,7 @@ import {
   CalendarDays
 } from 'lucide-react';
 
-// 직접 그려주신 스케치를 바탕으로 만든 커스텀 로고 컴포넌트
+// 로고 컴포넌트
 const CustomLogo = ({ className = "w-10 h-10" }) => (
   <svg 
     viewBox="0 0 100 100" 
@@ -34,7 +34,7 @@ const CustomLogo = ({ className = "w-10 h-10" }) => (
     <circle cx="30" cy="35" r="7" fill="currentColor" />
     {/* 오른쪽 눈 */}
     <circle cx="70" cy="35" r="7" fill="currentColor" />
-    {/* 살짝 기울어진 입선 */}
+    {/* 살짝 기울어진 입 */}
     <path 
       d="M 25 65 L 75 55" 
       stroke="currentColor" 
@@ -61,10 +61,10 @@ const App = () => {
       { id: 4, label: '에너지 관리', value: 0, color: 'bg-orange-500' }
     ],
     categories: [
-      { id: 1, name: '스마트 스토어', status: 'Ready', progress: 0, color: 'text-yellow-400' },
-      { id: 2, name: 'AI 엔지니어링', status: 'Ready', progress: 0, color: 'text-indigo-400' },
-      { id: 3, name: '학업/GPA', status: 'Ready', progress: 0, color: 'text-emerald-400' },
-      { id: 4, name: '영상/디자인', status: 'Ready', progress: 0, color: 'text-rose-400' },
+      { id: 1, name: '카테고리1', status: 'Ready', progress: 0, color: 'text-yellow-400' },
+      { id: 2, name: '카테고리2', status: 'Ready', progress: 0, color: 'text-indigo-400' },
+      { id: 3, name: '카테고리3', status: 'Ready', progress: 0, color: 'text-emerald-400' },
+      { id: 4, name: '카테고리4', status: 'Ready', progress: 0, color: 'text-rose-400' },
     ],
     kpt: {
       keep: [],
@@ -472,7 +472,7 @@ const App = () => {
             ))}
           </div>
           <p className="mt-8 text-sm italic font-light leading-relaxed opacity-90">
-            "지루한 반복을 거부하고, 나만의 고유한 시스템으로 세상을 설득하는 한 해가 될 것."
+            "나의 목표"
           </p>
         </section>
       </div>
